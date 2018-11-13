@@ -1,21 +1,7 @@
 import sys
 import os
 import re
-from HTMLParser import HTMLParser
-
-class MLStripper(HTMLParser):
-    def __init__(self):
-        self.reset()
-        self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
-    def get_data(self):
-        return ''.join(self.fed)
-
-def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
+from bs4 import BeautifulSoup
 
 def replace_comma_to_space(param):
     return param.replace(",", "")
@@ -38,22 +24,48 @@ def rem_html_comment(param):
     result = re.sub("(<!--.*?-->)", "", param, flags=re.MULTILINE)
     return result
 
+def visible(element):
+    if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
+        return False
+    elif re.match('<!--.*-->', str(element.encode('utf-8'))):
+        return False
+    return True
+
 while(1):
     try:
         content = raw_input()
         if ( content.strip() == '' ): 
         	break
-            
-        content = strip_tags(content)
-    #        content = replace_comma_to_space(content)
-        content = replace_quote(content)
-    #        content = add_double_quotes(content)
-        content = rem_hex_string(content)
-        content = rem_color_value(content)
-        content = ' '.join( content.split() )
-        content = rem_html_comment(content)
 
-        print (content)
+        # print (content)
+        # print ("\n\n")
+        content = rem_html_comment(content)
+        # print (content)
+        # print ("\n\n")
+        content = rem_color_value(content)
+        # print (content)
+        # print ("\n\n")
+        content = rem_hex_string(content)
+        # print (content)
+        # print ("\n\n")
+
+        #content = replace_comma_to_space(content)
+        content = replace_quote(content)
+        #content = add_double_quotes(content)
+
+        soup = BeautifulSoup(content, 'html.parser')
+        text_elements = soup.findAll(text=True)
+        #print (text_elements)
+        #print ("\n\n")
+         
+        visible_text_elements = filter(visible, text_elements)
+        #print list(visible_text_elements)
+        
+        result = ''
+        for text_e in visible_text_elements:
+            result = result + text_e
+        print (result)
+        
     except KeyboardInterrupt:
         #print ("keyboard error")
         break
